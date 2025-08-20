@@ -37,3 +37,25 @@ def get_llm(role: str) -> BaseChatModel:
         return _get_gemini()
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")
+
+
+@lru_cache
+def _get_groq() -> ChatGroq:
+    settings = get_settings()
+    return ChatGroq(
+        api_key=settings.groq_api_key,
+        model=settings.groq_model,
+        temperature=0.1,
+        max_retries=3,
+    )
+
+
+@lru_cache
+def _get_gemini() -> ChatGoogleGenerativeAI:
+    settings = get_settings()
+    return ChatGoogleGenerativeAI(
+        google_api_key=settings.gemini_api_key,
+        model=settings.gemini_model,
+        temperature=0.2,
+        max_retries=3,
+    )
