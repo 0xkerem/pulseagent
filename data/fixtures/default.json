@@ -1,0 +1,102 @@
+[
+  {
+    "id": "d001",
+    "source": "fixture",
+    "text": "The app crashes frequently on startup. This has been happening for weeks and there's no fix in sight. I'm considering switching to a competitor.",
+    "rating": 1.0,
+    "date": "2024-10-20T10:00:00",
+    "author": "user_1",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d002",
+    "source": "fixture",
+    "text": "Love the product overall but the mobile experience is lagging behind the desktop version. Please invest more in the mobile app.",
+    "rating": 3.0,
+    "date": "2024-10-18T14:00:00",
+    "author": "user_2",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d003",
+    "source": "fixture",
+    "text": "Would really love a dark mode option. It's 2024 and most apps have this. My eyes hurt using this app at night.",
+    "rating": 3.0,
+    "date": "2024-10-15T20:00:00",
+    "author": "user_3",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d004",
+    "source": "fixture",
+    "text": "Excellent customer support! They resolved my issue within 2 hours. The product itself is fantastic and worth every penny.",
+    "rating": 5.0,
+    "date": "2024-10-22T09:00:00",
+    "author": "user_4",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d005",
+    "source": "fixture",
+    "text": "Performance has degraded significantly over the last month. Basic operations that used to be instant now take 5-10 seconds. Very frustrating.",
+    "rating": 2.0,
+    "date": "2024-10-21T11:00:00",
+    "author": "user_5",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d006",
+    "source": "fixture",
+    "text": "Pricing is too high for the value offered. Competitors provide similar features at half the price. Cancelling next month.",
+    "rating": 2.0,
+    "date": "2024-10-19T16:00:00",
+    "author": "user_6",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d007",
+    "source": "fixture",
+    "text": "The API documentation is outdated and missing key examples. Took me days to figure out basic integrations that should be documented.",
+    "rating": 2.0,
+    "date": "2024-10-10T13:00:00",
+    "author": "user_7",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d008",
+    "source": "fixture",
+    "text": "Absolutely love this product. Has transformed my workflow completely. The team collaboration features are best-in-class.",
+    "rating": 5.0,
+    "date": "2024-10-23T08:00:00",
+    "author": "user_8",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d009",
+    "source": "fixture",
+    "text": "Integration with Slack is broken since the last update. Our team relies on this integration for daily operations. Need an urgent fix.",
+    "rating": 1.0,
+    "date": "2024-10-24T10:00:00",
+    "author": "user_9",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "d010",
+    "source": "fixture",
+    "text": "Would love to see batch operations added. Right now I have to process items one by one which is incredibly tedious for large datasets.",
+    "rating": 3.0,
+    "date": "2024-10-12T15:00:00",
+    "author": "user_10",
+    "url": null,
+    "metadata": {}
+  }
+]

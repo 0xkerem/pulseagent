@@ -1,0 +1,302 @@
+[
+  {
+    "id": "r001",
+    "source": "reddit",
+    "text": "Notion is getting unbearably slow on my Mac. Simple pages take 5+ seconds to load. I've been using it for 2 years but this is pushing me to migrate to Obsidian. Anyone else experiencing this?",
+    "rating": 2.0,
+    "date": "2024-10-15T09:23:00",
+    "author": "slownotion_user",
+    "url": "https://reddit.com/r/Notion/comments/example1",
+    "metadata": {"score": 234, "subreddit": "Notion"}
+  },
+  {
+    "id": "r002",
+    "source": "app_store",
+    "text": "The iOS app crashes every single time I try to open a database with more than 500 entries. Lost 2 hours of work yesterday. This is unacceptable for a paid product. Downgrading to 1 star until fixed.",
+    "rating": 1.0,
+    "date": "2024-10-18T14:30:00",
+    "author": "iphone_user_92",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r003",
+    "source": "reddit",
+    "text": "Why is there still no proper offline mode?? I travel a lot and every time I'm on a plane my entire workflow is dead. Obsidian and Roam both handle offline perfectly. Notion team please add this!",
+    "rating": null,
+    "date": "2024-10-12T11:00:00",
+    "author": "digital_nomad_dev",
+    "url": "https://reddit.com/r/Notion/comments/example3",
+    "metadata": {"score": 567, "subreddit": "Notion"}
+  },
+  {
+    "id": "r004",
+    "source": "trustpilot",
+    "text": "I absolutely love Notion. It has transformed the way I organize my entire life. The templates are incredible and the team collaboration features are best in class. 10/10 would recommend to anyone.",
+    "rating": 5.0,
+    "date": "2024-10-20T08:00:00",
+    "author": "happyuser_2024",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r005",
+    "source": "reddit",
+    "text": "The API rate limits are killing us. We're building an internal tool and keep hitting 3 req/sec limits. Even the paid plan has the same restriction. We're seriously considering switching to Coda or Airtable for our team.",
+    "rating": null,
+    "date": "2024-10-08T16:45:00",
+    "author": "startup_cto",
+    "url": "https://reddit.com/r/Notion/comments/example5",
+    "metadata": {"score": 189, "subreddit": "NotionAPI"}
+  },
+  {
+    "id": "r006",
+    "source": "app_store",
+    "text": "Performance on mobile has degraded massively since the last update. Everything lags. Opening the app takes 8 seconds on my iPhone 14 Pro. Please optimize!",
+    "rating": 2.0,
+    "date": "2024-10-22T10:15:00",
+    "author": "mobileperfuser",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r007",
+    "source": "reddit",
+    "text": "Would love a proper Kanban view with swimlanes. Right now the board view is too basic compared to Trello or Linear. This would be a game changer for my dev team.",
+    "rating": null,
+    "date": "2024-09-30T14:00:00",
+    "author": "agile_pm",
+    "url": "https://reddit.com/r/Notion/comments/example7",
+    "metadata": {"score": 312, "subreddit": "Notion"}
+  },
+  {
+    "id": "r008",
+    "source": "google_play",
+    "text": "App keeps crashing on Android 14. I've tried reinstalling 3 times. The crash happens specifically when I switch between databases. Please fix this ASAP, I need this for work.",
+    "rating": 1.0,
+    "date": "2024-10-19T09:00:00",
+    "author": "android_notion_fan",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r009",
+    "source": "reddit",
+    "text": "The pricing is way too high for solo developers. $16/month for basic features that competitors offer for free. I'm cancelling my subscription and moving to Obsidian which is free and way faster.",
+    "rating": null,
+    "date": "2024-10-11T20:30:00",
+    "author": "indie_hacker_42",
+    "url": "https://reddit.com/r/Notion/comments/example9",
+    "metadata": {"score": 445, "subreddit": "Notion"}
+  },
+  {
+    "id": "r010",
+    "source": "trustpilot",
+    "text": "Documentation is severely lacking for the API. Half the endpoints aren't documented at all. I spent 3 days debugging something that should have been in the docs. The developer experience is terrible.",
+    "rating": 2.0,
+    "date": "2024-10-05T13:00:00",
+    "author": "frustrated_dev",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r011",
+    "source": "reddit",
+    "text": "Page loading is getting worse every month. I've been tracking it: my main dashboard now takes 12 seconds to load. This used to be under 2 seconds. Something is seriously wrong with the backend.",
+    "rating": null,
+    "date": "2024-10-16T11:30:00",
+    "author": "perf_tracker",
+    "url": "https://reddit.com/r/Notion/comments/example11",
+    "metadata": {"score": 198, "subreddit": "Notion"}
+  },
+  {
+    "id": "r012",
+    "source": "app_store",
+    "text": "Best note-taking app I've ever used. The database feature alone is worth the subscription price. My entire team uses it and we've been 10x more productive.",
+    "rating": 5.0,
+    "date": "2024-10-21T15:00:00",
+    "author": "teamlead_sarah",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r013",
+    "source": "hackernews",
+    "text": "Notion's block-based editor is a clever but ultimately flawed paradigm. Searching across blocks is still terrible. Full-text search takes forever and misses obvious matches. This is a fundamental product issue.",
+    "rating": null,
+    "date": "2024-10-03T17:00:00",
+    "author": "hn_poweruser",
+    "url": "https://news.ycombinator.com/item?id=example13",
+    "metadata": {"score": 87}
+  },
+  {
+    "id": "r014",
+    "source": "reddit",
+    "text": "I've been trying to get Notion to integrate with our Jira instance for months. The official integration is buggy and loses sync every few days. We're paying for a business plan and this is the support we get?",
+    "rating": null,
+    "date": "2024-10-09T10:00:00",
+    "author": "enterprise_user_pm",
+    "url": "https://reddit.com/r/Notion/comments/example14",
+    "metadata": {"score": 156, "subreddit": "Notion"}
+  },
+  {
+    "id": "r015",
+    "source": "google_play",
+    "text": "Please please please add a widget for the home screen! I want to see my daily tasks without opening the app. Every productivity app has widgets, why doesn't Notion?",
+    "rating": 3.0,
+    "date": "2024-10-14T08:00:00",
+    "author": "widget_fan_android",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r016",
+    "source": "reddit",
+    "text": "Notion AI is impressive but way too expensive as an add-on. $10/user/month on top of the base plan is ridiculous. Just include it in the Pro plan and I'd stay forever. Otherwise I'm switching to Craft.",
+    "rating": null,
+    "date": "2024-10-17T14:30:00",
+    "author": "ai_power_user",
+    "url": "https://reddit.com/r/Notion/comments/example16",
+    "metadata": {"score": 278, "subreddit": "Notion"}
+  },
+  {
+    "id": "r017",
+    "source": "app_store",
+    "text": "The mobile app crashes every morning when I try to review my daily notes. This has been happening for 3 weeks. I submitted a bug report 2 weeks ago and got zero response from support.",
+    "rating": 1.0,
+    "date": "2024-10-23T07:30:00",
+    "author": "daily_crash_victim",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r018",
+    "source": "reddit",
+    "text": "The collaboration features are phenomenal. Real-time editing with my team of 8 across 3 time zones works flawlessly. Comments, mentions, version history - all excellent.",
+    "rating": null,
+    "date": "2024-10-20T12:00:00",
+    "author": "remote_team_lead",
+    "url": "https://reddit.com/r/Notion/comments/example18",
+    "metadata": {"score": 145, "subreddit": "Notion"}
+  },
+  {
+    "id": "r019",
+    "source": "trustpilot",
+    "text": "I'm cancelling after 3 years as a paying customer. Performance is terrible, mobile is broken, and support takes weeks to respond. Migrating to Coda next week. Notion has lost the plot.",
+    "rating": 1.0,
+    "date": "2024-10-24T09:00:00",
+    "author": "long_time_user_done",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r020",
+    "source": "reddit",
+    "text": "Slow loading issue on desktop is a known bug for months and still not fixed. When I open Notion on a fresh browser it takes forever. There are GitHub issues and forum posts about this from over a year ago.",
+    "rating": null,
+    "date": "2024-10-13T16:00:00",
+    "author": "bug_tracker_notion",
+    "url": "https://reddit.com/r/Notion/comments/example20",
+    "metadata": {"score": 334, "subreddit": "Notion"}
+  },
+  {
+    "id": "r021",
+    "source": "app_store",
+    "text": "Would really appreciate a proper dark mode that works consistently. Some elements are still white in dark mode. Minor but annoying for nighttime use.",
+    "rating": 3.0,
+    "date": "2024-09-28T22:00:00",
+    "author": "night_owl_user",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r022",
+    "source": "reddit",
+    "text": "The formula syntax is confusing and inconsistent. Coming from Airtable, this feels like a step back. There's barely any documentation on advanced formulas. Need a complete rewrite of this feature.",
+    "rating": null,
+    "date": "2024-10-01T11:00:00",
+    "author": "formula_power_user",
+    "url": "https://reddit.com/r/Notion/comments/example22",
+    "metadata": {"score": 221, "subreddit": "Notion"}
+  },
+  {
+    "id": "r023",
+    "source": "google_play",
+    "text": "Notion on Android is awful. It's slow, the UI is not optimized for mobile at all, and it drains my battery. The iOS version seems better but I don't have an iPhone.",
+    "rating": 2.0,
+    "date": "2024-10-10T15:00:00",
+    "author": "android_notion_2",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r024",
+    "source": "trustpilot",
+    "text": "Excellent product overall. The templates marketplace is fantastic. I built my entire personal and professional system in Notion. Customer support was very helpful when I needed it.",
+    "rating": 5.0,
+    "date": "2024-10-22T11:00:00",
+    "author": "notion_evangelist",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r025",
+    "source": "reddit",
+    "text": "Slack integration broke 2 weeks ago and no fix in sight. We rely on Notion + Slack notifications for our entire team workflow. This is blocking our daily operations.",
+    "rating": null,
+    "date": "2024-10-18T09:00:00",
+    "author": "ops_manager_frustrated",
+    "url": "https://reddit.com/r/Notion/comments/example25",
+    "metadata": {"score": 167, "subreddit": "Notion"}
+  },
+  {
+    "id": "r026",
+    "source": "reddit",
+    "text": "Web clipper extension is broken on Chrome after the latest update. Can't save anything from the web to Notion anymore. This is a core feature for my research workflow.",
+    "rating": null,
+    "date": "2024-10-21T10:00:00",
+    "author": "web_clipper_user",
+    "url": "https://reddit.com/r/Notion/comments/example26",
+    "metadata": {"score": 203, "subreddit": "Notion"}
+  },
+  {
+    "id": "r027",
+    "source": "app_store",
+    "text": "Loading times on iPhone are absolutely terrible. Went from under 1 second to over 10 seconds after the last update. This is the third time in 6 months performance has regressed like this.",
+    "rating": 2.0,
+    "date": "2024-10-24T12:00:00",
+    "author": "perf_regression_notifier",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r028",
+    "source": "reddit",
+    "text": "Please add version history for database views, not just pages. I accidentally deleted a filter setup I spent hours building and there was no way to recover it.",
+    "rating": null,
+    "date": "2024-09-25T14:00:00",
+    "author": "db_power_user_notion",
+    "url": "https://reddit.com/r/Notion/comments/example28",
+    "metadata": {"score": 289, "subreddit": "Notion"}
+  },
+  {
+    "id": "r029",
+    "source": "trustpilot",
+    "text": "Switched from Notion after 3 years. The product has stagnated while competitors have improved. Performance is worse than ever. I gave them many chances but they've lost a loyal customer.",
+    "rating": 1.0,
+    "date": "2024-10-25T08:00:00",
+    "author": "ex_notion_fan",
+    "url": null,
+    "metadata": {}
+  },
+  {
+    "id": "r030",
+    "source": "reddit",
+    "text": "The new AI features are genuinely useful. Summarization and writing assistance save me hours every week. Worth the extra cost for heavy users.",
+    "rating": null,
+    "date": "2024-10-19T16:00:00",
+    "author": "ai_notion_fan",
+    "url": "https://reddit.com/r/Notion/comments/example30",
+    "metadata": {"score": 134, "subreddit": "Notion"}
+  }
+]
