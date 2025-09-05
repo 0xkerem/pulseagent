@@ -35,13 +35,34 @@ Return ONLY the response text, no JSON, no metadata.
 """).strip()
 
 
+def _safe_value(field) -> str:
+    """Return .value if it's an enum, else return as string.
+    After LangGraph dict round-trip, enum fields may be plain strings."""
+    return field.value if hasattr(field, "value") else str(field)
+
+
+def _extract_content(response) -> str:
+    """Safely extract text content from LLM response.
+    Gemini sometimes returns a list of content parts instead of a plain string."""
+    content = response.content
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, dict):
+                parts.append(part.get("text", ""))
+            else:
+                parts.append(str(part))
+        return " ".join(parts).strip()
+    return str(content).strip()
+
+
 class ResponseAgent:
     """
     LangGraph node: generates draft responses for high-urgency reviews.
     Processes top N reviews by urgency score to stay within rate limits.
     """
 
-    TOP_N = 20          # Only generate responses for top N reviews
+    TOP_N = 20
     URGENCY_THRESHOLD = 4.0
 
     def __init__(self, rag_agent: RAGAgent):
@@ -52,13 +73,13 @@ class ResponseAgent:
     async def _generate(self, review: ScoredReview, rag_context_text: str) -> str:
         user_msg = dedent(f"""
         Product: {review.review.product}
-        Review (source: {review.review.source}):
+        Review (source: {_safe_value(review.review.source)}):
         "{review.review.text[:800]}"
 
-        Category: {review.category.value}
-        Sentiment: {review.sentiment.value} (score: {review.sentiment_score:.2f})
+        Category: {_safe_value(review.category)}
+        Sentiment: {_safe_value(review.sentiment)} (score: {review.sentiment_score:.2f})
         Is churn signal: {review.is_churn_signal}
-        Rating: {review.review.rating or 'N/A'}
+        Rating: {review.review.rating if review.review.rating is not None else 'N/A'}
 
         {f'Documentation context: {rag_context_text}' if rag_context_text else ''}
         """).strip()
@@ -68,10 +89,9 @@ class ResponseAgent:
             HumanMessage(content=user_msg),
         ]
         response = await self.llm.ainvoke(messages)
-        return response.content.strip()
+        return _extract_content(response)
 
     async def run(self, state: PipelineState) -> PipelineState:
-        # Select high-urgency reviews
         candidates = [
             r for r in state.scored_reviews
             if r.urgency_score >= self.URGENCY_THRESHOLD
@@ -87,7 +107,6 @@ class ResponseAgent:
         drafts: list[DraftResponse] = []
 
         for review in targets:
-            # Query RAG for context
             rag_ctx = await self.rag.query(review.review.text[:500])
             rag_text = ""
             if rag_ctx.retrieved_chunks:

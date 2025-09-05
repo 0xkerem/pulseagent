@@ -50,6 +50,22 @@ Return ONLY valid JSON array:
 """).strip()
 
 
+def _safe_value(field) -> str:
+    """Return .value if it's an enum, else return as string.
+    After LangGraph dict round-trip, enum fields may be plain strings."""
+    return field.value if hasattr(field, "value") else str(field)
+
+
+def _safe_category(field) -> ReviewCategory:
+    """Coerce a string or enum to ReviewCategory safely."""
+    if isinstance(field, ReviewCategory):
+        return field
+    try:
+        return ReviewCategory(str(field))
+    except ValueError:
+        return ReviewCategory.OTHER
+
+
 class UrgencyScorerAgent:
     """
     LangGraph node: scores each review for urgency and groups them into clusters.
@@ -65,16 +81,13 @@ class UrgencyScorerAgent:
         frequency_weight: float = 1.0,
         impact_estimate: float = 5.0,
     ) -> float:
-        # Sentiment contribution: negative = higher urgency
-        sentiment_weight = (1.0 - review.sentiment_score) / 2.0  # 0→1
+        sentiment_weight = (1.0 - review.sentiment_score) / 2.0
         base = sentiment_weight * 3.0
 
-        # Churn multiplier
         churn_bonus = 0.0
         if review.is_churn_signal:
             churn_bonus = self.settings.churn_urgency_multiplier
 
-        # Rating penalty (low rating = more urgent)
         rating_penalty = 0.0
         if review.review.rating is not None:
             rating_penalty = max(0, (3.0 - review.review.rating) * 0.5)
@@ -88,27 +101,27 @@ class UrgencyScorerAgent:
         reviews: list[ClassifiedReview],
     ) -> list[ReviewCluster]:
         """Ask LLM to group reviews of the same category into themes."""
+        cat_str = _safe_value(category)
+
         if len(reviews) == 1:
-            # Single review → single cluster
             r = reviews[0]
             return [ReviewCluster(
                 cluster_id=str(uuid.uuid4())[:8],
-                category=category,
-                theme=r.key_phrases[0] if r.key_phrases else category.value,
-                reviews=[],      # will be filled after scoring
+                category=_safe_category(category),
+                theme=r.key_phrases[0] if r.key_phrases else cat_str,
+                reviews=[],
                 total_count=1,
                 avg_urgency=0.0,
                 churn_risk_count=1 if r.is_churn_signal else 0,
                 top_phrases=r.key_phrases,
             )]
 
-        # Prepare compact review list for LLM
         compact = [
             {"id": r.review.id, "text": r.review.text[:300], "phrases": r.key_phrases}
             for r in reviews
         ]
         user_msg = (
-            f"Category: {category.value}\n"
+            f"Category: {cat_str}\n"
             f"Reviews:\n{json.dumps(compact, indent=2)}"
         )
 
@@ -119,7 +132,8 @@ class UrgencyScorerAgent:
 
         try:
             response = await self.llm.ainvoke(messages)
-            raw = response.content.strip()
+            raw = response.content if isinstance(response.content, str) else str(response.content)
+            raw = raw.strip()
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
                 if raw.startswith("json"):
@@ -127,14 +141,13 @@ class UrgencyScorerAgent:
             raw = raw.strip()
             cluster_data: list[dict] = json.loads(raw)
         except Exception as e:
-            logger.warning(f"Clustering failed for {category}: {e}. Falling back to single cluster.")
+            logger.warning(f"Clustering failed for {cat_str}: {e}. Falling back to single cluster.")
             cluster_data = [{
-                "theme": category.value.replace("_", " ").title(),
+                "theme": cat_str.replace("_", " ").title(),
                 "review_ids": [r.review.id for r in reviews],
                 "top_phrases": [],
             }]
 
-        # Build a review_id → review map
         id_map = {r.review.id: r for r in reviews}
         clusters: list[ReviewCluster] = []
 
@@ -142,18 +155,18 @@ class UrgencyScorerAgent:
             cluster_reviews_classified = [
                 id_map[rid] for rid in cd.get("review_ids", []) if rid in id_map
             ]
-            clusters.append(ReviewCluster(
+            c = ReviewCluster(
                 cluster_id=str(uuid.uuid4())[:8],
-                category=category,
-                theme=cd.get("theme", category.value),
-                reviews=[],       # scored reviews added later
+                category=_safe_category(category),
+                theme=cd.get("theme", cat_str),
+                reviews=[],
                 total_count=len(cluster_reviews_classified),
                 avg_urgency=0.0,
                 churn_risk_count=sum(1 for r in cluster_reviews_classified if r.is_churn_signal),
                 top_phrases=cd.get("top_phrases", []),
-            ))
-            # Attach the classified reviews temporarily using a custom attribute
-            clusters[-1].__dict__["_classified"] = cluster_reviews_classified
+            )
+            c.__dict__["_classified"] = cluster_reviews_classified
+            clusters.append(c)
 
         return clusters
 
@@ -162,31 +175,28 @@ class UrgencyScorerAgent:
             f"[UrgencyScorerAgent] Scoring {len(state.classified_reviews)} reviews..."
         )
 
-        # Group by category
+        # Group by category — coerce strings to enum safely
         by_category: dict[ReviewCategory, list[ClassifiedReview]] = defaultdict(list)
         for r in state.classified_reviews:
-            by_category[r.category].append(r)
+            cat = _safe_category(r.category)
+            by_category[cat].append(r)
 
-        # Cluster within each category
         all_clusters: list[ReviewCluster] = []
         for category, cat_reviews in by_category.items():
             clusters = await self._cluster_category(category, cat_reviews)
             all_clusters.extend(clusters)
 
-        # Compute frequency weights: reviews in large clusters get higher weight
-        # Build review_id → cluster size
         rev_to_cluster_size: dict[str, int] = {}
         for cluster in all_clusters:
             classified = cluster.__dict__.get("_classified", [])
             for r in classified:
                 rev_to_cluster_size[r.review.id] = cluster.total_count
 
-        # Score every review
         scored: list[ScoredReview] = []
         for cr in state.classified_reviews:
             cluster_size = rev_to_cluster_size.get(cr.review.id, 1)
             freq_weight = min(3.0, 1.0 + (cluster_size - 1) * 0.2)
-            impact = 5.0 + min(3.0, cluster_size * 0.3)   # larger cluster = higher impact
+            impact = 5.0 + min(3.0, cluster_size * 0.3)
             urgency = self._compute_urgency(cr, freq_weight, impact)
 
             scored.append(ScoredReview(
@@ -203,7 +213,6 @@ class UrgencyScorerAgent:
 
         state.scored_reviews = scored
 
-        # Finalize clusters: attach ScoredReview objects + compute avg urgency
         scored_map = {s.review.id: s for s in scored}
         for cluster in all_clusters:
             classified = cluster.__dict__.pop("_classified", [])

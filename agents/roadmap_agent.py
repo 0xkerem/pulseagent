@@ -11,13 +11,19 @@ Priority algorithm:
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from textwrap import dedent
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from loguru import logger
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from llm_factory import get_llm
 from models import (
@@ -50,6 +56,21 @@ Return ONLY the JSON object, no extra text.
 """).strip()
 
 
+def _safe_value(field) -> str:
+    """Return .value if it's an enum, else return as string."""
+    return field.value if hasattr(field, "value") else str(field)
+
+
+def _safe_category(field) -> ReviewCategory:
+    """Coerce string or enum to ReviewCategory."""
+    if isinstance(field, ReviewCategory):
+        return field
+    try:
+        return ReviewCategory(str(field))
+    except ValueError:
+        return ReviewCategory.OTHER
+
+
 def _assign_priority(cluster: ReviewCluster) -> Priority:
     if cluster.churn_risk_count >= 5 or cluster.avg_urgency >= 8.0:
         return Priority.P0
@@ -60,21 +81,65 @@ def _assign_priority(cluster: ReviewCluster) -> Priority:
     return Priority.P3
 
 
+def _extract_content(response) -> str:
+    """Safely extract string content from LLM response."""
+    content = response.content
+    if isinstance(content, list):
+        parts = [part.get("text", "") if isinstance(part, dict) else str(part) for part in content]
+        return " ".join(parts).strip()
+    return str(content).strip()
+
+
+def _fallback_item(cluster: ReviewCluster, priority: Priority) -> RoadmapItem:
+    """Generate a basic roadmap item without LLM when API fails."""
+    cat_str = _safe_value(cluster.category)
+    return RoadmapItem(
+        item_id=f"PULSE-{str(uuid.uuid4())[:6].upper()}",
+        title=cluster.theme[:60] if cluster.theme else f"Improve {cat_str}",
+        description=(
+            f"Users have reported issues related to: {cluster.theme}. "
+            f"This affects approximately {cluster.total_count} users "
+            f"with {cluster.churn_risk_count} churn signals detected."
+        ),
+        priority=priority,
+        category=_safe_category(cluster.category),
+        affected_users_estimate=cluster.total_count,
+        churn_risk_score=float(cluster.churn_risk_count),
+        implementation_effort="medium",
+        user_story=f"As a user, I want {cluster.theme} so that my experience improves.",
+        acceptance_criteria=[
+            f"Issue '{cluster.theme}' is resolved",
+            "Affected users confirm the fix",
+            "No regression in related features",
+        ],
+        source_cluster_ids=[cluster.cluster_id],
+        competitor_has_it=None,
+    )
+
+
 class RoadmapAgent:
     """
     LangGraph node: generates a prioritized product roadmap from review clusters.
-    Skips PRAISE clusters (positive feedback → no action needed).
+    Skips PRAISE clusters (positive feedback — no action needed).
     """
+
+    # Delay between API calls to avoid rate limiting (seconds)
+    INTER_REQUEST_DELAY = 2.0
 
     def __init__(self):
         self.llm = get_llm("roadmap")
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8))
-    async def _generate_item(self, cluster: ReviewCluster, priority: Priority) -> RoadmapItem:
-        # Build concise cluster summary for LLM
+    @retry(
+        stop=stop_after_attempt(4),
+        wait=wait_exponential(multiplier=2, min=2, max=30),
+        reraise=False,
+    )
+    async def _generate_item_with_retry(self, cluster: ReviewCluster, priority: Priority) -> RoadmapItem | None:
+        """Attempt LLM generation — returns None on unrecoverable failure."""
+        cat_str = _safe_value(cluster.category)
         sample_texts = [r.review.text[:200] for r in cluster.reviews[:5]]
         summary = {
-            "category": cluster.category.value,
+            "category": cat_str,
             "theme": cluster.theme,
             "total_reviews": cluster.total_count,
             "avg_urgency": cluster.avg_urgency,
@@ -89,32 +154,22 @@ class RoadmapAgent:
         ]
 
         response = await self.llm.ainvoke(messages)
-        raw = response.content.strip()
+        raw = _extract_content(response)
+
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
         raw = raw.strip()
 
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError as e:
-            logger.warning(f"Roadmap JSON parse failed: {e}")
-            parsed = {
-                "title": cluster.theme,
-                "description": f"Recurring issue: {cluster.theme}",
-                "implementation_effort": "medium",
-                "user_story": f"As a user, I want {cluster.theme} to be improved.",
-                "acceptance_criteria": ["Issue is resolved", "Users confirm fix"],
-                "competitor_has_it": None,
-            }
+        parsed = json.loads(raw)   # raises JSONDecodeError → triggers retry
 
         return RoadmapItem(
             item_id=f"PULSE-{str(uuid.uuid4())[:6].upper()}",
             title=parsed["title"],
             description=parsed["description"],
             priority=priority,
-            category=cluster.category,
+            category=_safe_category(cluster.category),
             affected_users_estimate=cluster.total_count,
             churn_risk_score=float(cluster.churn_risk_count),
             implementation_effort=parsed.get("implementation_effort", "medium"),
@@ -125,10 +180,10 @@ class RoadmapAgent:
         )
 
     async def run(self, state: PipelineState) -> PipelineState:
-        # Filter out pure praise clusters — no action needed
         actionable = [
             c for c in state.clusters
-            if c.category != ReviewCategory.PRAISE and c.total_count > 0
+            if _safe_value(c.category) != ReviewCategory.PRAISE.value
+            and c.total_count > 0
         ]
 
         logger.info(
@@ -136,28 +191,35 @@ class RoadmapAgent:
         )
 
         items: list[RoadmapItem] = []
-        for cluster in actionable:
-            priority = _assign_priority(cluster)
-            try:
-                item = await self._generate_item(cluster, priority)
-                items.append(item)
-                logger.debug(
-                    f"[RoadmapAgent] {item.item_id} [{priority.value}] — {item.title}"
-                )
-            except Exception as e:
-                err = f"Roadmap generation failed for cluster {cluster.cluster_id}: {e}"
-                logger.error(err)
-                state.errors.append(err)
 
-        # Sort by priority then churn risk
+        for i, cluster in enumerate(actionable):
+            priority = _assign_priority(cluster)
+
+            # Small delay between requests to respect Gemini rate limits
+            if i > 0:
+                await asyncio.sleep(self.INTER_REQUEST_DELAY)
+
+            try:
+                item = await self._generate_item_with_retry(cluster, priority)
+                if item is None:
+                    raise ValueError("Retry returned None")
+            except Exception as e:
+                logger.warning(
+                    f"[RoadmapAgent] LLM failed for cluster '{cluster.theme}' "
+                    f"({e.__class__.__name__}) — using fallback item."
+                )
+                item = _fallback_item(cluster, priority)
+
+            items.append(item)
+            logger.debug(f"[RoadmapAgent] {item.item_id} [{priority.value}] — {item.title}")
+
         priority_order = {Priority.P0: 0, Priority.P1: 1, Priority.P2: 2, Priority.P3: 3}
         items.sort(key=lambda i: (priority_order[i.priority], -i.churn_risk_score))
 
         state.roadmap_items = items
 
-        # Log summary
         from collections import Counter
-        dist = Counter(i.priority.value for i in items)
+        dist = Counter(_safe_value(i.priority) for i in items)
         logger.success(
             f"[RoadmapAgent] {len(items)} roadmap items generated. "
             f"Priority distribution: {dict(dist)}"

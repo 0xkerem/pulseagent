@@ -21,6 +21,12 @@ from models import (
     SentimentLabel,
 )
 
+
+
+def _safe_value(field) -> str:
+    """Return .value if it's an enum, else return as string."""
+    return field.value if hasattr(field, "value") else str(field)
+
 SYSTEM_PROMPT = dedent("""
 You are a product review analyst. Analyze the given user review and return a JSON object.
 
@@ -65,12 +71,13 @@ class ClassifierAgent:
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=5))
     async def _classify_one(self, review: Review) -> ClassifiedReview:
-        user_msg = f"""
-Product: {review.product}
-Source: {review.source}
-Rating: {review.rating or 'N/A'}
-Review text: {review.text[:1500]}
-"""
+        # Use .value to ensure enum serializes to plain string for LLM
+        user_msg = (
+            f"Product: {review.product}\n"
+            f"Source: {_safe_value(review.source)}\n"
+            f"Rating: {review.rating if review.rating is not None else 'N/A'}\n"
+            f"Review text: {review.text[:1500]}"
+        )
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(content=user_msg),
@@ -135,7 +142,14 @@ Review text: {review.text[:1500]}
                 if (i + 1) % 10 == 0:
                     logger.debug(f"[ClassifierAgent] Progress: {i+1}/{len(state.raw_reviews)}")
             except Exception as e:
-                err = f"Classification failed for review {review.id}: {e}"
+                # Log the full error detail so we can debug API issues
+                err_detail = str(e)
+                if hasattr(e, 'response'):
+                    try:
+                        err_detail += f" | Response: {e.response.text[:300]}"
+                    except Exception:
+                        pass
+                err = f"Classification failed for review {review.id}: {err_detail}"
                 logger.error(err)
                 state.errors.append(err)
                 errors += 1
@@ -147,7 +161,7 @@ Review text: {review.text[:1500]}
 
         # Log category distribution
         from collections import Counter
-        dist = Counter(r.category.value for r in classified)
+        dist = Counter(_safe_value(r.category) for r in classified)
         logger.info(f"[ClassifierAgent] Category distribution: {dict(dist)}")
 
         return state

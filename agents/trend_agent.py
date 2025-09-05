@@ -24,19 +24,48 @@ Return ONLY the summary text, no JSON.
 """).strip()
 
 
+def _safe_value(field) -> str:
+    """Return .value if it's an enum, else return as string."""
+    return field.value if hasattr(field, "value") else str(field)
+
+
+def _safe_category(field) -> ReviewCategory:
+    """Coerce string or enum to ReviewCategory."""
+    if isinstance(field, ReviewCategory):
+        return field
+    try:
+        return ReviewCategory(str(field))
+    except ValueError:
+        return ReviewCategory.OTHER
+
+
+def _extract_content(response) -> str:
+    """Safely extract string content from LLM response."""
+    content = response.content
+    if isinstance(content, list):
+        parts = [part.get("text", "") if isinstance(part, dict) else str(part) for part in content]
+        return " ".join(parts).strip()
+    return str(content).strip()
+
+
 def _window_counts(
     reviews: list[ScoredReview],
     window_days: int,
     offset_days: int = 0,
-) -> dict[ReviewCategory, int]:
-    """Count reviews per category within a time window."""
+) -> dict[str, int]:
+    """Count reviews per category (as string) within a time window."""
     now = datetime.now()
     start = now - timedelta(days=window_days + offset_days)
     end = now - timedelta(days=offset_days)
-    counts: dict[ReviewCategory, int] = defaultdict(int)
+    counts: dict[str, int] = defaultdict(int)
     for r in reviews:
-        if start <= r.review.date.replace(tzinfo=None) <= end:
-            counts[r.category] += 1
+        review_date = r.review.date
+        # Handle both datetime objects and ISO strings
+        if isinstance(review_date, str):
+            review_date = datetime.fromisoformat(review_date)
+        review_date = review_date.replace(tzinfo=None)
+        if start <= review_date <= end:
+            counts[_safe_value(r.category)] += 1
     return counts
 
 
@@ -46,8 +75,8 @@ class TrendAgent:
     generates TrendAlert objects for significant changes.
     """
 
-    CHANGE_THRESHOLD = 0.30     # 30% change triggers an alert
-    MIN_VOLUME = 3               # Ignore categories with < 3 reviews
+    CHANGE_THRESHOLD = 0.30
+    MIN_VOLUME = 3
 
     def __init__(self):
         self.llm = get_llm("trend")
@@ -63,13 +92,13 @@ class TrendAgent:
 
     async def _generate_summary(
         self,
-        category: ReviewCategory,
+        category_str: str,
         direction: str,
         change_pct: float,
         theme: str,
     ) -> str:
         msg = (
-            f"Category: {category.value}\n"
+            f"Category: {category_str}\n"
             f"Direction: {direction}\n"
             f"Change: {change_pct*100:.0f}%\n"
             f"Theme: {theme}"
@@ -80,11 +109,11 @@ class TrendAgent:
         ]
         try:
             response = await self.llm.ainvoke(messages)
-            return response.content.strip()
+            return _extract_content(response)
         except Exception:
             direction_word = "increased" if direction == "rising" else "decreased"
             return (
-                f"{category.value.replace('_', ' ').title()} complaints "
+                f"{category_str.replace('_', ' ').title()} complaints "
                 f"have {direction_word} by {change_pct*100:.0f}% "
                 f"in the past {self.settings.trend_window_days} days."
             )
@@ -98,16 +127,15 @@ class TrendAgent:
 
         alerts: list[TrendAlert] = []
 
-        all_categories = set(current.keys()) | set(previous.keys())
-        for category in all_categories:
-            curr_count = current.get(category, 0)
-            prev_count = previous.get(category, 0)
+        all_cat_strs = set(current.keys()) | set(previous.keys())
+        for cat_str in all_cat_strs:
+            curr_count = current.get(cat_str, 0)
+            prev_count = previous.get(cat_str, 0)
 
             if curr_count < self.MIN_VOLUME and prev_count < self.MIN_VOLUME:
                 continue
 
             if prev_count == 0:
-                # New category appearing
                 change_pct = 1.0 if curr_count > 0 else 0.0
             else:
                 change_pct = (curr_count - prev_count) / prev_count
@@ -116,22 +144,21 @@ class TrendAgent:
                 continue
 
             direction = "rising" if change_pct > 0 else "falling"
+            category = _safe_category(cat_str)
 
-            # Find most common theme for this category in current window
             cat_reviews = [
                 r for r in state.scored_reviews
-                if r.category == category
+                if _safe_value(r.category) == cat_str
             ]
             churn_in_cat = any(r.is_churn_signal for r in cat_reviews)
 
-            # Find cluster theme
-            theme = category.value.replace("_", " ").title()
+            theme = cat_str.replace("_", " ").title()
             for cluster in state.clusters:
-                if cluster.category == category:
+                if _safe_value(cluster.category) == cat_str:
                     theme = cluster.theme
                     break
 
-            summary = await self._generate_summary(category, direction, change_pct, theme)
+            summary = await self._generate_summary(cat_str, direction, change_pct, theme)
             level = self._alert_level(change_pct, churn_in_cat)
 
             alerts.append(TrendAlert(
@@ -145,11 +172,10 @@ class TrendAgent:
             ))
 
             logger.info(
-                f"[TrendAgent] [{level.upper()}] {category.value}: "
+                f"[TrendAgent] [{level.upper()}] {cat_str}: "
                 f"{direction} {change_pct*100:.0f}%"
             )
 
-        # Sort: critical first, then by absolute change
         alerts.sort(key=lambda a: (
             {"critical": 0, "warning": 1, "info": 2}[a.alert_level],
             -abs(a.change_percent),

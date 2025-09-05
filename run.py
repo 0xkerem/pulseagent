@@ -10,6 +10,7 @@ Usage:
 """
 import asyncio
 import sys
+import platform
 from pathlib import Path
 
 import argparse
@@ -38,7 +39,6 @@ PRIORITY_COLORS = {
 def print_summary(state: PipelineState):
     from collections import Counter
 
-    # Header
     console.print(Panel(
         f"[bold cyan]PulseAgent[/] — [white]{state.product_name}[/]\n"
         f"Run ID: [dim]{state.run_id}[/]  •  "
@@ -48,9 +48,11 @@ def print_summary(state: PipelineState):
         border_style="cyan",
     ))
 
-    # Category distribution
     if state.classified_reviews:
-        cat_dist = Counter(r.category.value for r in state.classified_reviews)
+        cat_dist = Counter(
+            r.category.value if hasattr(r.category, "value") else str(r.category)
+            for r in state.classified_reviews
+        )
         churn = sum(1 for r in state.classified_reviews if r.is_churn_signal)
         console.print(f"\n[bold]Category Distribution:[/]")
         for cat, count in sorted(cat_dist.items(), key=lambda x: -x[1]):
@@ -58,7 +60,6 @@ def print_summary(state: PipelineState):
             console.print(f"  {cat:<25} {bar} [dim]{count}[/]")
         console.print(f"\n  [bold red]🚨 Churn signals: {churn}[/]")
 
-    # Trend alerts
     if state.trend_alerts:
         console.print(f"\n[bold]Trend Alerts ({len(state.trend_alerts)}):[/]")
         for alert in state.trend_alerts:
@@ -66,7 +67,6 @@ def print_summary(state: PipelineState):
             arrow = "📈" if alert.direction == "rising" else "📉"
             console.print(f"  {icon} {arrow} {alert.theme} [{abs(alert.change_percent):.0f}%]")
 
-    # Roadmap
     if state.roadmap_items:
         table = Table(title=f"\nRoadmap — {len(state.roadmap_items)} Items", show_lines=True)
         table.add_column("ID", style="dim", width=12)
@@ -88,7 +88,6 @@ def print_summary(state: PipelineState):
             )
         console.print(table)
 
-    # Draft responses count
     if state.draft_responses:
         console.print(
             f"\n[bold green]✉️  {len(state.draft_responses)} draft responses[/] "
@@ -112,7 +111,6 @@ async def main():
     parser.add_argument("--docs-dir", default="./data/docs")
     args = parser.parse_args()
 
-    # Suppress loguru for cleaner output unless verbose
     logger.remove()
     logger.add(sys.stderr, level="WARNING")
 
@@ -133,4 +131,8 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Windows fix: use SelectorEventLoop to avoid SSL cleanup errors on ProactorEventLoop
+    if platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     asyncio.run(main())
