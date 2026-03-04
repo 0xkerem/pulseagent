@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     # ── LLM ──────────────────────────────────────────────────────
     groq_api_key: str = ""
     gemini_api_key: str = ""
-    groq_model: str = "llama-3.1-70b-versatile"
-    gemini_model: str = "gemini-1.5-flash"
+    groq_model: str = "llama-3.3-70b-versatile"
+    gemini_model: str = "gemini-3.1-flash-lite-preview"
 
     # Agent → LLM routing
     classifier_llm: str = "groq"
