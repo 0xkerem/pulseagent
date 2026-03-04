@@ -1,6 +1,5 @@
 # 🔊 PulseAgent
 
-[![CI](https://github.com/yourusername/pulseagent/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/pulseagent/actions)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![LangGraph](https://img.shields.io/badge/LangGraph-0.2-green.svg)](https://langchain-ai.github.io/langgraph/)
 
